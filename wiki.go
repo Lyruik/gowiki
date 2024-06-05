@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -24,12 +25,20 @@ func (p *Page) save() error {
 	return os.WriteFile(filename, p.Body, 0600)
 }
 
+func createInterLink(s []byte) []byte {
+	l, _ := fmt.Printf(`<a href="/view/"%s">%s</a>`, s, s)
+	return []byte(l)
+}
+
 func loadPage(title string) (*Page, error) {
 	filename := "./data/" + title + ".txt"
 	body, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
+	r, _ := regexp.Compile(`(\[+[a-zA-Z]+\]+)`)
+	in := []byte(body)
+	body = r.ReplaceAllFunc(in, createInterLink)
 	return &Page{Title: title, Body: body}, nil
 }
 
