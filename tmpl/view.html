@@ -4,13 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{.Title}}</title>
-    <link rel="stylesheet" href="./css/main.css" />
   </head>
   <body>
     <div id="mainContent">
       <h1 id="viewH1">{{.Title}}</h1>
       <p>[<a href="/edit/{{.Title}}">edit</a>]</p>
-      <div id="viewBodyDiv">{{printf "%s" .Body}}</div>
+      <div id="viewBodyDiv">{{.DisplayBody}}</div>
     </div>
   </body>
 </html>

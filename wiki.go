@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -11,8 +10,9 @@ import (
 
 // Types here
 type Page struct {
-	Title string
-	Body  []byte
+	Title       string
+	Body        []byte
+	DisplayBody template.HTML
 }
 
 // Globals here
@@ -26,8 +26,10 @@ func (p *Page) save() error {
 }
 
 func createInterLink(s []byte) []byte {
-	l, _ := fmt.Printf(`<a href="/view/"%s">%s</a>`, s, s)
-	return []byte(l)
+	r, _ := regexp.Compile(`([a-zA-Z]+)`)
+	l := r.FindString(string(s))
+	h := ("<a href=\"/view/" + l + "\">" + l + "</a>")
+	return []byte(h)
 }
 
 func loadPage(title string) (*Page, error) {
@@ -36,9 +38,6 @@ func loadPage(title string) (*Page, error) {
 	if err != nil {
 		return nil, err
 	}
-	r, _ := regexp.Compile(`(\[+[a-zA-Z]+\]+)`)
-	in := []byte(body)
-	body = r.ReplaceAllFunc(in, createInterLink)
 	return &Page{Title: title, Body: body}, nil
 }
 
@@ -48,6 +47,9 @@ func viewHandler(w http.ResponseWriter, r *http.Request, title string) {
 		http.Redirect(w, r, "/edit/"+title, http.StatusFound)
 		return
 	}
+	regCom, _ := regexp.Compile(`\[([a-zA-Z]+)\]`)
+	escapedBody := []byte(template.HTMLEscapeString(string(p.Body)))
+	p.DisplayBody = template.HTML(regCom.ReplaceAllFunc(escapedBody, createInterLink))
 	renderTemplate(w, "view", p)
 }
 
@@ -77,7 +79,7 @@ func renderTemplate(w http.ResponseWriter, tmpl string, p *Page) {
 	}
 }
 
-func makeHandler(fn func (http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
+func makeHandler(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		m := validPath.FindStringSubmatch(r.URL.Path)
 		if m == nil {
@@ -98,6 +100,6 @@ func main() {
 	http.HandleFunc("/", homeRedirect)
 	http.HandleFunc("/view/", makeHandler(viewHandler))
 	http.HandleFunc("/edit/", makeHandler(editHandler))
-        http.HandleFunc("/save/", makeHandler(saveHandler))
+	http.HandleFunc("/save/", makeHandler(saveHandler))
 	log.Fatal(http.ListenAndServe(":8197", nil))
 }
